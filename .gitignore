@@ -1,0 +1,25 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Streamlit cache
+.streamlit/
+
+# HuggingFace model cache
+*.bin
+*.safetensors
