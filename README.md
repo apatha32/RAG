@@ -25,6 +25,16 @@ license: mit
   <img src="https://img.shields.io/badge/License-MIT-lightgrey" />
 </p>
 
+<p align="center">
+  <a href="https://huggingface.co/spaces/ambarish0221/AskMyDoc">
+    <img src="https://img.shields.io/badge/🤗%20Live%20Demo-AskMyDoc-yellow?style=for-the-badge" />
+  </a>
+  &nbsp;
+  <a href="https://github.com/apatha32/RAG-Agent-AskMyDoc">
+    <img src="https://img.shields.io/badge/GitHub-RAG--Agent--AskMyDoc-black?style=for-the-badge&logo=github" />
+  </a>
+</p>
+
 ---
 
 > **Embeddings run entirely on your CPU using `sentence-transformers` — only LLM calls use your OpenAI API key.**
