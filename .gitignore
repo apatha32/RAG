@@ -17,9 +17,14 @@ build/
 # macOS
 .DS_Store
 
-# Streamlit cache
-.streamlit/
+# Next.js
+frontend/.next/
+frontend/node_modules/
+frontend/out/
 
 # HuggingFace model cache
 *.bin
 *.safetensors
+
+# Qdrant local storage
+qdrant_storage/
