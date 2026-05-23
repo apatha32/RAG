@@ -156,11 +156,21 @@ Open **http://localhost:8501** in your browser.
 
 ## ☁️ Deploy on Hugging Face Spaces
 
-1. Go to [huggingface.co/spaces](https://huggingface.co/spaces) → **New Space**
-2. Choose **Streamlit** as the SDK
-3. Push this repo to the Space
-4. Add `OPENAI_API_KEY` as a **Space Secret** (Settings → Variables and secrets)
-5. Your app is live at `https://huggingface.co/spaces/<username>/<space-name>`
+1. Go to **[huggingface.co/new-space](https://huggingface.co/new-space)**
+2. Set **Space name** (e.g. `chat-with-any-document`)
+3. Select **Streamlit** as the SDK *(auto-detected from README frontmatter)*
+4. Under **Files**, choose **"Import from GitHub"** → paste `https://github.com/apatha32/RAG`
+5. Go to **Settings → Variables and secrets** → add your secrets:
+
+   | Secret | Required for |
+   |---|---|
+   | `OPENAI_API_KEY` | OpenAI provider (gpt-4o-mini etc.) |
+   | `HF_TOKEN` | HuggingFace free models (Mistral, Zephyr, Llama) |
+
+6. The Space builds automatically (~2 min) and goes live at:
+   `https://huggingface.co/spaces/<your-username>/<space-name>`
+
+> **Tip:** You only need one of the two secrets. Add `HF_TOKEN` alone to run entirely for free.
 
 ---
 
@@ -168,7 +178,8 @@ Open **http://localhost:8501** in your browser.
 
 | Variable | Required | Description |
 |---|---|---|
-| `OPENAI_API_KEY` | Yes | Your OpenAI API key |
+| `OPENAI_API_KEY` | For OpenAI models | Get it at [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| `HF_TOKEN` | For free HF models | Get it at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) |
 
 ---
 
@@ -178,7 +189,8 @@ Open **http://localhost:8501** in your browser.
 - **[LangChain](https://langchain.com/)** — RAG orchestration
 - **[FAISS](https://github.com/facebookresearch/faiss)** — Vector similarity search
 - **[sentence-transformers](https://sbert.net/)** — Local CPU embeddings
-- **[OpenAI](https://openai.com/)** — LLM for answer generation
+- **[OpenAI](https://openai.com/)** — Paid LLM option
+- **[HuggingFace](https://huggingface.co/)** — Free LLM option (Mistral, Zephyr, Llama)
 - **[PyPDF](https://pypdf.readthedocs.io/)** — PDF text extraction
 
 ---
