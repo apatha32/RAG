@@ -108,8 +108,8 @@ RAG/
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/apatha32/RAG.git
-cd RAG
+git clone https://github.com/apatha32/RAG-Agent-AskMyDoc.git
+cd RAG-Agent-AskMyDoc
 ```
 
 ### 2. Create a virtual environment
@@ -159,7 +159,7 @@ Open **http://localhost:8501** in your browser.
 1. Go to **[huggingface.co/new-space](https://huggingface.co/new-space)**
 2. Set **Space name** (e.g. `chat-with-any-document`)
 3. Select **Streamlit** as the SDK *(auto-detected from README frontmatter)*
-4. Under **Files**, choose **"Import from GitHub"** → paste `https://github.com/apatha32/RAG`
+   - Under **Files**, choose **"Import from GitHub"** → paste `https://github.com/apatha32/RAG-Agent-AskMyDoc`
 5. Go to **Settings → Variables and secrets** → add your secrets:
 
    | Secret | Required for |
