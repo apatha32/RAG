@@ -1,3 +1,15 @@
+---
+title: Chat With Any Document
+emoji: 📄
+colorFrom: blue
+colorTo: purple
+sdk: streamlit
+sdk_version: 1.57.0
+app_file: app.py
+pinned: false
+license: mit
+---
+
 <h1 align="center">📄 Chat with Any Document</h1>
 
 <p align="center">

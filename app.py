@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from src.document_loader import load_pdf, load_url
 from src.chunker import chunk_documents
 from src.vector_store import build_vector_store
-from src.rag_chain import answer_question
+from src.rag_chain import answer_question, HF_MODELS
 
 load_dotenv()
 
@@ -37,20 +37,46 @@ if "last_sources" not in st.session_state:
 with st.sidebar:
     st.header("⚙️ Configuration")
 
-    openai_key = st.text_input(
-        "OpenAI API Key",
-        type="password",
-        value=os.getenv("OPENAI_API_KEY", ""),
-        placeholder="sk-...",
-        help="Your OpenAI API key. Never stored beyond this session.",
+    provider = st.radio(
+        "LLM Provider",
+        options=["OpenAI", "HuggingFace (Free)"],
+        horizontal=True,
+        help="HuggingFace uses the free Inference API — just provide a HF token.",
     )
 
-    model_name = st.selectbox(
-        "LLM Model",
-        options=["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4o"],
-        index=0,
-        help="gpt-4o-mini is fastest and cheapest.",
-    )
+    openai_key = ""
+    hf_token = ""
+    model_name = ""
+
+    if provider == "OpenAI":
+        openai_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            value=os.getenv("OPENAI_API_KEY", ""),
+            placeholder="sk-...",
+            help="Your OpenAI API key. Never stored beyond this session.",
+        )
+        model_name = st.selectbox(
+            "Model",
+            options=["gpt-4o-mini", "gpt-3.5-turbo", "gpt-4o"],
+            index=0,
+            help="gpt-4o-mini is fastest and cheapest.",
+        )
+    else:
+        hf_token = st.text_input(
+            "HuggingFace Token",
+            type="password",
+            value=os.getenv("HF_TOKEN", ""),
+            placeholder="hf_...",
+            help="Free token from huggingface.co/settings/tokens",
+        )
+        st.caption("Get a free token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)")
+        model_name = st.selectbox(
+            "Model",
+            options=HF_MODELS,
+            index=0,
+            help="All models run via the HuggingFace Inference API at no cost.",
+        )
 
     st.divider()
     st.subheader("📥 Load Document")
@@ -74,8 +100,9 @@ with st.sidebar:
 
     # ── Process document ──────────────────────────────────────────────────────
     if process_btn:
-        if not openai_key:
-            st.error("Please enter your OpenAI API key.")
+        api_ready = (provider == "OpenAI" and openai_key) or (provider == "HuggingFace (Free)" and hf_token)
+        if not api_ready:
+            st.error("Please enter your API key above.")
         elif source_type == "Upload PDF" and not uploaded_file:
             st.error("Please upload a PDF file.")
         elif source_type == "Enter URL" and not url_input.strip():
@@ -132,8 +159,9 @@ with col_chat:
     )
 
     if user_input:
-        if not openai_key:
-            st.error("Please enter your OpenAI API key in the sidebar.")
+        api_ready = (provider == "OpenAI" and openai_key) or (provider == "HuggingFace (Free)" and hf_token)
+        if not api_ready:
+            st.error("Please enter your API key in the sidebar.")
             st.stop()
 
         # Show user message immediately
@@ -148,9 +176,11 @@ with col_chat:
                     result = answer_question(
                         st.session_state.vector_store,
                         user_input,
-                        openai_key,
-                        model_name,
-                        top_k,
+                        provider=provider.split(" ")[0].lower(),
+                        model_name=model_name,
+                        openai_api_key=openai_key or None,
+                        hf_token=hf_token or None,
+                        k=top_k,
                     )
                     answer = result["answer"]
                     st.session_state.last_sources = result["sources"]
