@@ -11,7 +11,9 @@ from langchain_core.documents import Document
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 COLLECTION_NAME = "askmydoc"
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+# paraphrase-multilingual-MiniLM-L12-v2 supports 50+ languages while keeping
+# the same 384-dim embeddings as all-MiniLM-L6-v2 — zero breaking changes.
+EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 _store = None
 _client = None

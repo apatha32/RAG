@@ -22,6 +22,7 @@ from slowapi.util import get_remote_address
 from src.rag.loader import load_pdf, load_url
 from src.rag.chunkers import get_chunker
 from src.rag import vector_store as vs
+from src.rag.guardrails import validate_input, validate_output
 from src.agent.graph import create_agent
 
 load_dotenv()
@@ -132,6 +133,11 @@ async def chat(request: Request, req: ChatRequest):
     openai_key = req.openai_api_key or os.getenv("OPENAI_API_KEY")
     hf_token = req.hf_token or os.getenv("HF_TOKEN")
 
+    # Input guardrails — reject injections / oversized queries
+    is_safe, reason = validate_input(req.message)
+    if not is_safe:
+        raise HTTPException(400, reason)
+
     if req.provider == "openai" and not openai_key:
         raise HTTPException(400, "OpenAI API key is required.")
     if req.provider == "huggingface" and not hf_token:
@@ -188,6 +194,9 @@ async def chat(request: Request, req: ChatRequest):
                         "output": str(event["data"].get("output", ""))[:600],
                     }
                     yield f"data: {json.dumps(payload)}\n\n"
+
+            # Output guardrails — truncate + flag hallucination signals
+            full_response, _warnings = validate_output(full_response)
 
             # Persist to session
             history.append({"role": "user", "content": req.message})

@@ -1,12 +1,37 @@
 """
 Agent tools:
-  - rag_search : hybrid BM25 + dense retrieval → cross-encoder re-rank
+  - rag_search : HyDE query rewriting → hybrid BM25 + dense retrieval → cross-encoder re-rank
   - web_search : Tavily API (requires TAVILY_API_KEY)
 """
 import os
 from langchain_core.tools import tool
 from langchain_core.documents import Document
 from typing import List
+
+
+def _hyde_rewrite(query: str) -> str:
+    """
+    HyDE (Hypothetical Document Embeddings): generate a short hypothetical answer
+    to the query, then use THAT as the retrieval query. Dramatically improves
+    recall for vague or short questions.
+    Falls back to the original query if an LLM is unavailable.
+    """
+    try:
+        from langchain_openai import ChatOpenAI
+        import os
+        api_key = os.getenv("OPENAI_API_KEY", "")
+        if not api_key:
+            return query
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0, openai_api_key=api_key, max_tokens=120)
+        prompt = (
+            "Write a concise 2-3 sentence passage that would directly answer the following question. "
+            "Do not include the question itself.\n\nQuestion: " + query
+        )
+        response = llm.invoke(prompt)
+        hypothetical = response.content.strip()
+        return hypothetical if hypothetical else query
+    except Exception:
+        return query
 
 
 def make_rag_tool(vector_store):
@@ -19,8 +44,12 @@ def make_rag_tool(vector_store):
         if vector_store is None:
             return "No document has been ingested yet. Ask the user to upload a PDF or URL."
 
-        # Step 1: retrieve larger candidate pool (hybrid BM25 + dense)
-        dense_docs: List[Document] = vector_store.similarity_search(query, k=12)
+        # Step 1: HyDE — rewrite query into a hypothetical answer for better retrieval
+        retrieval_query = _hyde_rewrite(query)
+
+        # Step 2: retrieve larger candidate pool (hybrid BM25 + dense)
+        dense_docs: List[Document] = vector_store.similarity_search(retrieval_query, k=12)
+        # Step 3: hybrid BM25 + dense retrieval
         try:
             from langchain_community.retrievers import BM25Retriever
             from langchain.retrievers import EnsembleRetriever
@@ -32,13 +61,13 @@ def make_rag_tool(vector_store):
                 hybrid = EnsembleRetriever(
                     retrievers=[bm25, dense_ret], weights=[0.4, 0.6]
                 )
-                candidates = hybrid.invoke(query)
+                candidates = hybrid.invoke(retrieval_query)
             else:
                 candidates = dense_docs
         except Exception:
             candidates = dense_docs
 
-        # Step 2: cross-encoder re-rank → top 6
+        # Step 4: cross-encoder re-rank against the ORIGINAL query → top 6
         try:
             from src.rag.reranker import rerank
             docs = rerank(query, candidates, top_k=6)
