@@ -95,7 +95,7 @@ export function ChatWindow({ apiUrl, provider, model, openaiKey, hfToken, docsLo
           const raw = line.slice(6).trim();
           if (!raw) continue;
 
-          let event: { type: string; content?: string; name?: string; input?: string; output?: string; message?: string };
+          let event: { type: string; content?: string; name?: string; input?: string; output?: string; message?: string; session_id?: string };
           try {
             event = JSON.parse(raw);
           } catch {
