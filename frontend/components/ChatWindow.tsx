@@ -7,6 +7,7 @@ import { AgentStep } from "./AgentTrace";
 interface Props {
   apiUrl: string;
   provider: string;
+  model: string;
   openaiKey: string;
   hfToken: string;
   docsLoaded: boolean;
@@ -18,10 +19,11 @@ const WELCOME: Message = {
     "Hello! I'm your AI research assistant. Upload a document on the left and I'll answer questions about it using hybrid retrieval — or ask me anything and I'll search the web.",
 };
 
-export function ChatWindow({ apiUrl, provider, openaiKey, hfToken, docsLoaded }: Props) {
+export function ChatWindow({ apiUrl, provider, model, openaiKey, hfToken, docsLoaded }: Props) {
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -47,11 +49,10 @@ export function ChatWindow({ apiUrl, provider, openaiKey, hfToken, docsLoaded }:
     setInput("");
     setStreaming(true);
 
-    // Placeholder assistant message
-    const assistantIdx = messages.length + 1;
+    // Placeholder assistant message (with paired question for eval)
     setMessages((m) => [
       ...m,
-      { role: "assistant", content: "", streaming: true, steps: [] },
+      { role: "assistant", content: "", streaming: true, steps: [], question: text },
     ]);
 
     const controller = new AbortController();
@@ -63,7 +64,9 @@ export function ChatWindow({ apiUrl, provider, openaiKey, hfToken, docsLoaded }:
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
+          session_id: sessionId ?? undefined,
           provider,
+          model,
           openai_api_key: openaiKey || undefined,
           hf_token: hfToken || undefined,
         }),
@@ -121,6 +124,7 @@ export function ChatWindow({ apiUrl, provider, openaiKey, hfToken, docsLoaded }:
               return copy;
             });
           } else if (event.type === "done") {
+            if (event.session_id) setSessionId(event.session_id);
             setMessages((m) => {
               const copy = [...m];
               const last = { ...copy[copy.length - 1], streaming: false };

@@ -1,7 +1,7 @@
 """
 Agent tools:
-  - rag_search   : hybrid BM25 + dense retrieval from ingested document
-  - web_search   : Tavily API (requires TAVILY_API_KEY)
+  - rag_search : hybrid BM25 + dense retrieval → cross-encoder re-rank
+  - web_search : Tavily API (requires TAVILY_API_KEY)
 """
 import os
 from langchain_core.tools import tool
@@ -13,42 +13,48 @@ def make_rag_tool(vector_store):
     @tool
     def rag_search(query: str) -> str:
         """
-        Search the uploaded document for information relevant to the query.
+        Search the uploaded document(s) for information relevant to the query.
         Always use this first when answering questions about the document.
         """
         if vector_store is None:
             return "No document has been ingested yet. Ask the user to upload a PDF or URL."
 
-        # Dense retrieval
-        dense_docs: List[Document] = vector_store.similarity_search(query, k=6)
-
-        # BM25 sparse retrieval over the same collection
+        # Step 1: retrieve larger candidate pool (hybrid BM25 + dense)
+        dense_docs: List[Document] = vector_store.similarity_search(query, k=12)
         try:
             from langchain_community.retrievers import BM25Retriever
             from langchain.retrievers import EnsembleRetriever
 
-            all_docs = vector_store.similarity_search("", k=200)  # fetch all
-            if len(all_docs) > 0:
-                bm25 = BM25Retriever.from_documents(all_docs, k=6)
-                dense_retriever = vector_store.as_retriever(search_kwargs={"k": 6})
+            all_docs = vector_store.similarity_search("", k=500)
+            if all_docs:
+                bm25 = BM25Retriever.from_documents(all_docs, k=12)
+                dense_ret = vector_store.as_retriever(search_kwargs={"k": 12})
                 hybrid = EnsembleRetriever(
-                    retrievers=[bm25, dense_retriever], weights=[0.4, 0.6]
+                    retrievers=[bm25, dense_ret], weights=[0.4, 0.6]
                 )
-                docs = hybrid.invoke(query)[:6]
+                candidates = hybrid.invoke(query)
             else:
-                docs = dense_docs
+                candidates = dense_docs
         except Exception:
-            docs = dense_docs
+            candidates = dense_docs
+
+        # Step 2: cross-encoder re-rank → top 6
+        try:
+            from src.rag.reranker import rerank
+            docs = rerank(query, candidates, top_k=6)
+        except Exception:
+            docs = candidates[:6]
 
         if not docs:
             return "No relevant content found in the document."
 
         results = []
         for i, doc in enumerate(docs, 1):
-            source = doc.metadata.get("source", "document")
+            name = doc.metadata.get("doc_name", doc.metadata.get("source", "document"))
             page = doc.metadata.get("page", "")
             strategy = doc.metadata.get("chunking_strategy", "")
-            header = f"[Chunk {i} | {source}{f' p.{int(page)+1}' if page != '' else ''} | {strategy}]"
+            page_str = f" p.{int(page)+1}" if page != "" else ""
+            header = f"[Chunk {i} | {name}{page_str} | {strategy}]"
             results.append(f"{header}\n{doc.page_content}")
 
         return "\n\n---\n\n".join(results)

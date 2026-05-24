@@ -3,12 +3,17 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { User, Bot } from "lucide-react";
 import { AgentTrace, AgentStep } from "./AgentTrace";
+import { SourceCitations } from "./SourceCitation";
+import { EvalPanel } from "./EvalPanel";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export interface Message {
   role: "user" | "assistant";
   content: string;
   streaming?: boolean;
   steps?: AgentStep[];
+  question?: string; // paired user question for eval
 }
 
 export function MessageBubble({ message }: { message: Message }) {
@@ -52,6 +57,16 @@ export function MessageBubble({ message }: { message: Message }) {
           <div className="w-full">
             <AgentTrace steps={message.steps} />
           </div>
+        )}
+
+        {/* Source citations */}
+        {!isUser && !message.streaming && message.content && (
+          <SourceCitations text={message.content} />
+        )}
+
+        {/* Evaluation panel */}
+        {!isUser && !message.streaming && message.content && message.question && (
+          <EvalPanel question={message.question} answer={message.content} apiUrl={API_URL} />
         )}
       </div>
     </div>

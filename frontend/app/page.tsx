@@ -1,18 +1,40 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DocumentPanel } from "@/components/DocumentPanel";
 import { ChatWindow } from "@/components/ChatWindow";
-import { Settings, X, KeyRound, Brain, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Settings, X, KeyRound, Brain, PanelLeftClose, PanelLeftOpen, Wifi, WifiOff } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+const OPENAI_MODELS = ["gpt-4o-mini", "gpt-4o", "gpt-3.5-turbo"];
+const HF_MODELS = ["mistral-7b", "zephyr-7b", "llama-3"];
 
 export default function Home() {
   const [docsLoaded, setDocsLoaded] = useState(false);
   const [provider, setProvider] = useState("openai");
+  const [model, setModel] = useState("gpt-4o-mini");
   const [openaiKey, setOpenaiKey] = useState("");
   const [hfToken, setHfToken] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [backendReady, setBackendReady] = useState(false);
+
+  // Health check polling until backend is ready
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    const check = async () => {
+      try {
+        const res = await fetch(`${API_URL}/health`);
+        if (res.ok) {
+          setBackendReady(true);
+          clearInterval(interval);
+        }
+      } catch {}
+    };
+    check();
+    interval = setInterval(check, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen">
@@ -41,13 +63,20 @@ export default function Home() {
           </div>
         </div>
 
-        <button
-          onClick={() => setShowSettings((v) => !v)}
-          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          <Settings className="w-3.5 h-3.5" />
-          Keys
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Backend status indicator */}
+          <div className={`flex items-center gap-1.5 text-[11px] ${backendReady ? "text-emerald-500" : "text-amber-500"}`}>
+            {backendReady ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5 animate-pulse" />}
+            <span className="hidden sm:inline">{backendReady ? "Connected" : "Connecting…"}</span>
+          </div>
+          <button
+            onClick={() => setShowSettings((v) => !v)}
+            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Keys & Model
+          </button>
+        </div>
       </header>
 
       {/* Settings drawer */}
@@ -97,6 +126,21 @@ export default function Home() {
                 className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-indigo-500 font-mono"
               />
             )}
+
+            {/* Model selector */}
+            <div>
+              <p className="text-[11px] text-zinc-500 mb-1.5">Model</p>
+              <select
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                className="w-full bg-surface border border-surface-border rounded-lg px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-indigo-500"
+              >
+                {(provider === "openai" ? OPENAI_MODELS : HF_MODELS).map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
             <p className="text-[11px] text-zinc-600">Keys are stored only in browser memory and never sent to our servers.</p>
           </div>
         </div>
@@ -120,6 +164,7 @@ export default function Home() {
           <ChatWindow
             apiUrl={API_URL}
             provider={provider}
+            model={model}
             openaiKey={openaiKey}
             hfToken={hfToken}
             docsLoaded={docsLoaded}

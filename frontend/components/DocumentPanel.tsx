@@ -1,6 +1,6 @@
 "use client";
-import { useRef, useState } from "react";
-import { Upload, Link, Loader2, CheckCircle, Trash2, ChevronDown, ChevronUp, Settings } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Upload, Link, Loader2, CheckCircle, Trash2, ChevronDown, ChevronUp, Settings, FileText } from "lucide-react";
 
 const STRATEGIES = [
   {
@@ -25,7 +25,16 @@ const STRATEGIES = [
   },
 ];
 
+interface Doc {
+  id: string;
+  name: string;
+  chunks: number;
+  strategy: string;
+  pages: number;
+}
+
 interface IngestResult {
+  doc_id: string;
   chunks: number;
   strategy: string;
   pages: number;
@@ -50,6 +59,19 @@ export function DocumentPanel({ onIngest, onClear, apiUrl }: Props) {
   const [result, setResult] = useState<IngestResult | null>(null);
   const [error, setError] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [docs, setDocs] = useState<Doc[]>([]);
+
+  const refreshDocs = async () => {
+    try {
+      const res = await fetch(`${apiUrl}/documents`);
+      if (res.ok) {
+        const data = await res.json();
+        setDocs(data.documents ?? []);
+      }
+    } catch {}
+  };
+
+  useEffect(() => { refreshDocs(); }, []);
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -88,6 +110,7 @@ export function DocumentPanel({ onIngest, onClear, apiUrl }: Props) {
       setResult(data);
       setStatus("done");
       onIngest(data);
+      await refreshDocs();
     } catch (e) {
       setError(String(e));
       setStatus("error");
@@ -100,7 +123,14 @@ export function DocumentPanel({ onIngest, onClear, apiUrl }: Props) {
     setResult(null);
     setStatus("idle");
     setUrlValue("");
+    setDocs([]);
     onClear();
+  }
+
+  async function deleteDoc(docId: string) {
+    await fetch(`${apiUrl}/documents/${docId}`, { method: "DELETE" });
+    await refreshDocs();
+    if (docs.length <= 1) onClear();
   }
 
   return (
@@ -249,6 +279,31 @@ export function DocumentPanel({ onIngest, onClear, apiUrl }: Props) {
           </div>
         )}
       </div>
+
+      {/* Ingested documents list */}
+      {docs.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-zinc-400 mb-2">Ingested Documents ({docs.length})</p>
+          <div className="space-y-1.5">
+            {docs.map((doc) => (
+              <div key={doc.id} className="flex items-center gap-2 p-2 rounded-lg bg-surface-card border border-surface-border text-xs">
+                <FileText className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-zinc-200 truncate font-medium">{doc.name}</p>
+                  <p className="text-zinc-500 text-[11px]">{doc.chunks} chunks · {doc.pages} pp · {doc.strategy}</p>
+                </div>
+                <button
+                  onClick={() => deleteDoc(doc.id)}
+                  className="text-zinc-600 hover:text-red-400 transition-colors flex-shrink-0"
+                  title="Remove document"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Submit / Clear */}
       <button
