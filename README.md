@@ -1,12 +1,5 @@
 ---
 title: AskMyDoc
-emoji: 🤖
-colorFrom: indigo
-colorTo: purple
-sdk: docker
-pinned: false
-license: mit
----
 
 <h1 align="center">🤖 AskMyDoc — AI Research Agent</h1>
 
