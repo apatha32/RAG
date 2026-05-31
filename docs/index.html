@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AskMyDoc — AI Research Agent</title>
+  <meta name="description" content="Production RAG agent with HyDE query rewriting, multilingual embeddings, LangGraph ReAct architecture, and real-time SSE streaming." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #21262d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent2: #7ee787;
+      --accent3: #ffa657;
+      --tag-bg: #1f2937;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      background: rgba(13, 17, 23, 0.9);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      padding: 0 2rem;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    nav .logo { font-weight: 600; font-size: 1rem; color: var(--text); }
+    nav .links { display: flex; gap: 1.5rem; font-size: 0.875rem; color: var(--muted); }
+    nav .links a { color: var(--muted); }
+    nav .links a:hover { color: var(--text); text-decoration: none; }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 860px; margin: 0 auto; padding: 0 1.5rem; }
+
+    section { padding: 4rem 0; border-bottom: 1px solid var(--border); }
+    section:last-child { border-bottom: none; }
+
+    h1 { font-size: 2.6rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
+    h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
+    h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text); }
+    p { color: var(--muted); margin-bottom: 1rem; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ── HERO ── */
+    #hero { padding: 5rem 0 4rem; border-bottom: 1px solid var(--border); }
+    .hero-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(88, 166, 255, 0.1);
+      border: 1px solid rgba(88, 166, 255, 0.2);
+      padding: 0.2rem 0.7rem;
+      border-radius: 999px;
+      margin-bottom: 1.25rem;
+    }
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 620px;
+      margin: 1rem 0 2rem;
+    }
+    .hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.25rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #0d1117; }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .hero-meta { margin-top: 2.5rem; font-size: 0.8rem; color: var(--muted); }
+    .hero-meta span { margin-right: 1.5rem; }
+
+    /* ── TAGS ── */
+    .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .tag {
+      font-size: 0.78rem;
+      font-weight: 500;
+      background: var(--tag-bg);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.65rem;
+      border-radius: 4px;
+    }
+
+    /* ── CARDS ── */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem 1.25rem 1rem;
+    }
+    .card-icon {
+      font-size: 1.3rem;
+      margin-bottom: 0.6rem;
+      display: block;
+    }
+    .card p { font-size: 0.875rem; }
+
+    /* ── PIPELINE ── */
+    .pipeline {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.9;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .pipeline .hl { color: var(--accent2); }
+    .pipeline .hl2 { color: var(--accent); }
+    .pipeline .hl3 { color: var(--accent3); }
+
+    /* ── STACK TABLE ── */
+    .stack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; }
+    .stack-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+    }
+    .stack-item .label { color: var(--muted); font-size: 0.75rem; margin-bottom: 0.2rem; }
+    .stack-item .value { color: var(--text); font-weight: 500; }
+
+    /* ── FEATURE LIST ── */
+    .feature-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .feature {
+      display: flex;
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      align-items: flex-start;
+    }
+    .feature-num {
+      min-width: 28px;
+      height: 28px;
+      background: rgba(88, 166, 255, 0.1);
+      border: 1px solid rgba(88, 166, 255, 0.2);
+      color: var(--accent);
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .feature-body h3 { margin-bottom: 0.15rem; }
+    .feature-body p { font-size: 0.875rem; margin: 0; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 2.5rem 0;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    footer a { color: var(--muted); }
+
+    @media (max-width: 600px) {
+      h1 { font-size: 1.9rem; }
+      nav .links { gap: 1rem; }
+      .hero-actions { flex-direction: column; }
+      .btn { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">AskMyDoc</span>
+  <div class="links">
+    <a href="#why">Why</a>
+    <a href="#how">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#stack">Stack</a>
+    <a href="https://github.com/apatha32/RAG-Agent-AskMyDoc">GitHub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="container">
+    <div class="hero-badge">Production RAG Agent &mdash; Live on HuggingFace Spaces</div>
+    <h1>AskMyDoc</h1>
+    <p class="hero-sub">
+      An autonomous AI research agent that retrieves from your documents and the web in real time —
+      built with LangGraph, FastAPI, and a full retrieval pipeline from scratch.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://ambarish0221-askmydoc.hf.space" target="_blank">
+        Live Demo
+      </a>
+      <a class="btn btn-secondary" href="https://github.com/apatha32/RAG-Agent-AskMyDoc" target="_blank">
+        View on GitHub
+      </a>
+    </div>
+    <div class="hero-meta">
+      <span>May 2026</span>
+      <span>Python &middot; Next.js &middot; Go-live on HuggingFace Spaces</span>
+    </div>
+  </div>
+</section>
+
+<!-- WHY -->
+<section id="why">
+  <div class="container">
+    <h2>Why I built this</h2>
+    <p>
+      Most RAG demos stop at "embed a PDF, ask a question." That's a retrieval lookup, not an agent.
+      I wanted to build something closer to what production systems actually need — a LangGraph ReAct
+      agent that reasons about <em>which tool to use</em>, streams its trace back to the UI in real time,
+      maintains conversation history across turns, and handles multiple documents simultaneously.
+    </p>
+    <p>
+      The retrieval side was the other gap I wanted to close. Vanilla cosine similarity over chunks is
+      fragile — short or vague queries return noise. So I built a multi-stage pipeline: HyDE query
+      rewriting to generate a hypothetical answer before retrieval, hybrid BM25 + dense search for
+      breadth, and a cross-encoder to re-rank the survivors. The difference in recall is significant.
+    </p>
+    <p>
+      Deployment was a deliberate constraint: one Docker container, no external services required.
+      nginx + supervisord orchestrates the Next.js frontend and FastAPI backend inside a single image,
+      with in-memory Qdrant as fallback — so it runs identically locally and on HuggingFace Spaces.
+    </p>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <h2>How it works</h2>
+    <p style="margin-bottom: 1.25rem;">End-to-end request flow, from browser to answer:</p>
+    <div class="pipeline"><span class="hl2">Browser (Next.js 15)</span>
+  │  type a question → hit Send
+  ▼
+<span class="hl2">FastAPI  /chat</span>
+  ├── Input guardrails       (prompt injection patterns, length limits)
+  ├── Session memory lookup  (20-turn history per UUID)
+  │
+  ▼
+<span class="hl">LangGraph ReAct Agent</span>  ← decides which tool to call
+  │
+  ├── <span class="hl3">rag_search</span>
+  │     1. HyDE rewrite     LLM generates a hypothetical answer → use that for embedding lookup
+  │     2. Hybrid retrieve  BM25 + dense via EnsembleRetriever  (k=12 each)
+  │     3. Re-rank          cross-encoder/ms-marco-MiniLM-L-6-v2 → top 6 chunks
+  │     4. Return chunks    with [Chunk N | doc_name | page | strategy] citations
+  │
+  └── <span class="hl3">web_search</span>
+        Tavily API → 4 results when document doesn't contain the answer
+  │
+  ▼
+<span class="hl2">LLM</span>  (OpenAI gpt-4o-mini / gpt-4o  or  HuggingFace Mistral / Zephyr / Llama-3)
+  │  streams tokens via SSE
+  ▼
+<span class="hl2">Browser</span>  renders token stream + collapsible agent trace + source citations</div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <h2>Key features</h2>
+    <div class="feature-list">
+
+      <div class="feature">
+        <div class="feature-num">01</div>
+        <div class="feature-body">
+          <h3>HyDE Query Rewriting</h3>
+          <p>Before retrieval, the LLM generates a short hypothetical passage that would answer the question. The embedding of that passage is used for vector lookup instead of the raw query. Recall on short or ambiguous questions improves substantially — the original query is still used for re-ranking.</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">02</div>
+        <div class="feature-body">
+          <h3>Hybrid BM25 + Dense Retrieval</h3>
+          <p>BM25 and dense vector search are run in parallel and merged via <code style="font-size:0.82em;color:var(--accent)">EnsembleRetriever</code> (weights 0.4 / 0.6). BM25 catches exact keyword matches that dense search misses; dense search handles semantic paraphrasing. Together they consistently outperform either alone.</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">03</div>
+        <div class="feature-body">
+          <h3>Cross-Encoder Re-ranking</h3>
+          <p>The top-12 candidates from hybrid retrieval are scored by <code style="font-size:0.82em;color:var(--accent)">ms-marco-MiniLM-L-6-v2</code> — a cross-encoder that reads query and passage together rather than comparing embeddings in isolation. Top 6 are passed to the LLM, cutting noise and token cost.</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">04</div>
+        <div class="feature-body">
+          <h3>Multilingual Embeddings</h3>
+          <p>Embeddings use <code style="font-size:0.82em;color:var(--accent)">paraphrase-multilingual-MiniLM-L12-v2</code> — 50+ language support, same 384-dimensional space as the English-only model. Documents in non-English languages are indexed and retrieved correctly with no code changes.</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">05</div>
+        <div class="feature-body">
+          <h3>LangGraph ReAct Agent</h3>
+          <p>The agent loop is built with LangGraph's <code style="font-size:0.82em;color:var(--accent)">MessagesState</code> and <code style="font-size:0.82em;color:var(--accent)">ToolNode</code>. It decides whether to call <code style="font-size:0.82em;color:var(--accent)">rag_search</code> or <code style="font-size:0.82em;color:var(--accent)">web_search</code> based on the question, can chain multiple tool calls, and streams all intermediate steps back to the UI via SSE.</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">06</div>
+        <div class="feature-body">
+          <h3>Input &amp; Output Guardrails</h3>
+          <p>Input is checked against 9 regex patterns covering common prompt injection and jailbreak attempts before the agent sees it. Oversized queries (&gt;2000 chars) are rejected with a clear error. Output is truncated at 8000 chars and flagged if hallucination signal phrases are detected.</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">07</div>
+        <div class="feature-body">
+          <h3>RAG Evaluation Metrics</h3>
+          <p>After every answer, the user can trigger an evaluation pass that computes three embedding-based scores — answer relevancy, faithfulness to retrieved context, and context recall — entirely via cosine similarity. No external eval API required.</p>
+        </div>
+      </div>
+
+      <div class="feature">
+        <div class="feature-num">08</div>
+        <div class="feature-body">
+          <h3>Single-Container Deployment</h3>
+          <p>A multi-stage Dockerfile builds the Next.js frontend and Python backend into one image. nginx routes <code style="font-size:0.82em;color:var(--accent)">/chat</code>, <code style="font-size:0.82em;color:var(--accent)">/ingest</code>, and other API paths to FastAPI on port 8000; all other traffic goes to Next.js on port 3000. supervisord manages both processes. Qdrant falls back to in-memory if no external URL is set.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section id="stack">
+  <div class="container">
+    <h2>Tech stack</h2>
+    <div class="stack-grid" style="margin-bottom: 1.5rem;">
+      <div class="stack-item"><div class="label">Agent framework</div><div class="value">LangGraph 1.2 (ReAct)</div></div>
+      <div class="stack-item"><div class="label">Backend</div><div class="value">FastAPI 0.111 + Python 3.11</div></div>
+      <div class="stack-item"><div class="label">Frontend</div><div class="value">Next.js 15 + React 19</div></div>
+      <div class="stack-item"><div class="label">Styling</div><div class="value">Tailwind CSS + TypeScript</div></div>
+      <div class="stack-item"><div class="label">Vector DB</div><div class="value">Qdrant (in-memory fallback)</div></div>
+      <div class="stack-item"><div class="label">Embeddings</div><div class="value">paraphrase-multilingual-MiniLM-L12-v2</div></div>
+      <div class="stack-item"><div class="label">Re-ranker</div><div class="value">ms-marco-MiniLM-L-6-v2</div></div>
+      <div class="stack-item"><div class="label">LLM options</div><div class="value">OpenAI GPT-4o / HuggingFace</div></div>
+      <div class="stack-item"><div class="label">Web search</div><div class="value">Tavily API</div></div>
+      <div class="stack-item"><div class="label">Rate limiting</div><div class="value">slowapi (20 req/min)</div></div>
+      <div class="stack-item"><div class="label">Deployment</div><div class="value">Docker + HuggingFace Spaces</div></div>
+      <div class="stack-item"><div class="label">Proxy + process mgmt</div><div class="value">nginx + supervisord</div></div>
+    </div>
+    <div class="tags">
+      <span class="tag">Python</span>
+      <span class="tag">FastAPI</span>
+      <span class="tag">LangGraph</span>
+      <span class="tag">LangChain</span>
+      <span class="tag">Next.js 15</span>
+      <span class="tag">React 19</span>
+      <span class="tag">Tailwind CSS</span>
+      <span class="tag">TypeScript</span>
+      <span class="tag">Qdrant</span>
+      <span class="tag">sentence-transformers</span>
+      <span class="tag">rank-bm25</span>
+      <span class="tag">Tavily</span>
+      <span class="tag">Docker</span>
+      <span class="tag">nginx</span>
+      <span class="tag">supervisord</span>
+      <span class="tag">HuggingFace Spaces</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <p style="margin-bottom: 0.5rem;">
+      <a href="https://ambarish0221-askmydoc.hf.space" target="_blank">Live Demo</a>
+      &nbsp;&middot;&nbsp;
+      <a href="https://github.com/apatha32/RAG-Agent-AskMyDoc" target="_blank">GitHub</a>
+    </p>
+    <p>Built by Ambarish Pathak &mdash; May 2026</p>
+  </div>
+</footer>
+
+</body>
+</html>
