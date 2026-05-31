@@ -3,21 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AskMyDoc — AI Research Agent</title>
+  <title>AskMyDoc: AI Research Agent</title>
   <meta name="description" content="Production RAG agent with HyDE query rewriting, multilingual embeddings, LangGraph ReAct architecture, and real-time SSE streaming." />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0d1117;
-      --surface: #161b22;
-      --border: #21262d;
-      --text: #e6edf3;
-      --muted: #8b949e;
-      --accent: #58a6ff;
-      --accent2: #7ee787;
-      --accent3: #ffa657;
-      --tag-bg: #1f2937;
+      --bg: #08080f;
+      --surface: #0f0f1a;
+      --border: #1e1e30;
+      --text: #ffffff;
+      --muted: #b0b0c8;
+      --blue: #38bdf8;
+      --pink: #f472b6;
+      --orange: #fb923c;
+      --blue-glow: rgba(56, 189, 248, 0.25);
+      --pink-glow: rgba(244, 114, 182, 0.25);
+      --orange-glow: rgba(251, 146, 60, 0.25);
     }
 
     html { scroll-behavior: smooth; }
@@ -30,15 +32,14 @@
       line-height: 1.7;
     }
 
-    a { color: var(--accent); text-decoration: none; }
+    a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* ── NAV ── */
     nav {
       position: sticky;
       top: 0;
-      background: rgba(13, 17, 23, 0.9);
-      backdrop-filter: blur(8px);
+      background: rgba(8, 8, 15, 0.88);
+      backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
       z-index: 100;
       padding: 0 2rem;
@@ -47,156 +48,167 @@
       align-items: center;
       justify-content: space-between;
     }
-    nav .logo { font-weight: 600; font-size: 1rem; color: var(--text); }
-    nav .links { display: flex; gap: 1.5rem; font-size: 0.875rem; color: var(--muted); }
-    nav .links a { color: var(--muted); }
+    nav .logo {
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--blue);
+      text-shadow: 0 0 12px var(--blue-glow);
+      letter-spacing: 0.02em;
+    }
+    nav .links { display: flex; gap: 1.5rem; font-size: 0.875rem; }
+    nav .links a { color: var(--muted); transition: color 0.15s; }
     nav .links a:hover { color: var(--text); text-decoration: none; }
 
-    /* ── LAYOUT ── */
     .container { max-width: 860px; margin: 0 auto; padding: 0 1.5rem; }
-
     section { padding: 4rem 0; border-bottom: 1px solid var(--border); }
     section:last-child { border-bottom: none; }
 
-    h1 { font-size: 2.6rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; }
-    h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 1.25rem; color: var(--text); }
-    h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text); }
+    h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.03em; color: #ffffff; }
+    h2 { font-size: 1.35rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--text); letter-spacing: -0.01em; }
+    h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--text); }
     p { color: var(--muted); margin-bottom: 1rem; }
     p:last-child { margin-bottom: 0; }
 
-    /* ── HERO ── */
-    #hero { padding: 5rem 0 4rem; border-bottom: 1px solid var(--border); }
+    #hero { padding: 5.5rem 0 4rem; border-bottom: 1px solid var(--border); }
+
     .hero-badge {
-      display: inline-block;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--accent);
-      background: rgba(88, 166, 255, 0.1);
-      border: 1px solid rgba(88, 166, 255, 0.2);
-      padding: 0.2rem 0.7rem;
+      color: var(--blue);
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.25rem 0.8rem;
       border-radius: 999px;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.4rem;
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.15);
     }
-    .hero-sub {
-      font-size: 1.15rem;
-      color: var(--muted);
-      max-width: 620px;
-      margin: 1rem 0 2rem;
+
+    .hero-title-line {
+      background: linear-gradient(90deg, #ffffff 0%, #38bdf8 50%, #f472b6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
+
+    .hero-sub { font-size: 1.1rem; color: var(--muted); max-width: 600px; margin: 1rem 0 2rem; line-height: 1.75; }
+
     .hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
     .btn {
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      padding: 0.55rem 1.25rem;
-      border-radius: 6px;
+      padding: 0.6rem 1.35rem;
+      border-radius: 8px;
       font-size: 0.9rem;
-      font-weight: 500;
-      transition: opacity 0.15s;
+      font-weight: 600;
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
     }
-    .btn:hover { opacity: 0.85; text-decoration: none; }
-    .btn-primary { background: var(--accent); color: #0d1117; }
-    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn:hover { text-decoration: none; transform: translateY(-1px); }
+    .btn-primary { background: var(--blue); color: #08080f; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); }
+    .btn-primary:hover { box-shadow: 0 0 32px rgba(56, 189, 248, 0.65); }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
+    .btn-secondary:hover { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.04); }
+
     .hero-meta { margin-top: 2.5rem; font-size: 0.8rem; color: var(--muted); }
     .hero-meta span { margin-right: 1.5rem; }
 
-    /* ── TAGS ── */
     .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
     .tag {
-      font-size: 0.78rem;
+      font-size: 0.77rem;
       font-weight: 500;
-      background: var(--tag-bg);
-      color: var(--muted);
-      border: 1px solid var(--border);
+      background: rgba(56, 189, 248, 0.07);
+      color: var(--blue);
+      border: 1px solid rgba(56, 189, 248, 0.2);
       padding: 0.2rem 0.65rem;
       border-radius: 4px;
     }
 
-    /* ── CARDS ── */
-    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.25rem 1.25rem 1rem;
-    }
-    .card-icon {
-      font-size: 1.3rem;
-      margin-bottom: 0.6rem;
-      display: block;
-    }
-    .card p { font-size: 0.875rem; }
-
-    /* ── PIPELINE ── */
     .pipeline {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1.5rem;
+      border-radius: 10px;
+      padding: 1.6rem;
       font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-      font-size: 0.8rem;
+      font-size: 0.79rem;
       color: var(--muted);
-      line-height: 1.9;
+      line-height: 2;
       overflow-x: auto;
       white-space: pre;
+      box-shadow: inset 0 0 40px rgba(56, 189, 248, 0.03);
     }
-    .pipeline .hl { color: var(--accent2); }
-    .pipeline .hl2 { color: var(--accent); }
-    .pipeline .hl3 { color: var(--accent3); }
+    .pipeline .hl  { color: var(--pink);   text-shadow: 0 0 8px var(--pink-glow); }
+    .pipeline .hl2 { color: var(--blue);   text-shadow: 0 0 8px var(--blue-glow); }
+    .pipeline .hl3 { color: var(--orange); text-shadow: 0 0 8px var(--orange-glow); }
 
-    /* ── STACK TABLE ── */
     .stack-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; }
     .stack-item {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
       font-size: 0.875rem;
+      transition: border-color 0.2s;
     }
-    .stack-item .label { color: var(--muted); font-size: 0.75rem; margin-bottom: 0.2rem; }
+    .stack-item:hover { border-color: rgba(56, 189, 248, 0.3); }
+    .stack-item .label { color: var(--muted); font-size: 0.72rem; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.06em; }
     .stack-item .value { color: var(--text); font-weight: 500; }
 
-    /* ── FEATURE LIST ── */
     .feature-list { display: flex; flex-direction: column; gap: 0.75rem; }
     .feature {
       display: flex;
       gap: 1rem;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1rem 1.25rem;
+      border-radius: 10px;
+      padding: 1.1rem 1.3rem;
       align-items: flex-start;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
+    .feature:hover { border-color: rgba(244, 114, 182, 0.25); box-shadow: 0 0 20px rgba(244, 114, 182, 0.05); }
+
     .feature-num {
-      min-width: 28px;
-      height: 28px;
-      background: rgba(88, 166, 255, 0.1);
-      border: 1px solid rgba(88, 166, 255, 0.2);
-      color: var(--accent);
-      border-radius: 6px;
-      font-size: 0.78rem;
-      font-weight: 700;
+      min-width: 30px;
+      height: 30px;
+      background: rgba(244, 114, 182, 0.08);
+      border: 1px solid rgba(244, 114, 182, 0.3);
+      color: var(--pink);
+      border-radius: 7px;
+      font-size: 0.72rem;
+      font-weight: 800;
       display: flex;
       align-items: center;
       justify-content: center;
+      text-shadow: 0 0 8px var(--pink-glow);
+      flex-shrink: 0;
     }
-    .feature-body h3 { margin-bottom: 0.15rem; }
+
+    .feature-body h3 { margin-bottom: 0.2rem; color: #ffffff; }
     .feature-body p { font-size: 0.875rem; margin: 0; }
 
-    /* ── FOOTER ── */
-    footer {
-      padding: 2.5rem 0;
-      text-align: center;
-      font-size: 0.85rem;
-      color: var(--muted);
+    code {
+      font-size: 0.82em;
+      color: var(--orange);
+      background: rgba(251, 146, 60, 0.08);
+      border: 1px solid rgba(251, 146, 60, 0.15);
+      padding: 0.1em 0.4em;
+      border-radius: 4px;
+      font-family: "SFMono-Regular", Consolas, Menlo, monospace;
     }
+
+    footer { padding: 2.5rem 0; text-align: center; font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--border); }
     footer a { color: var(--muted); }
+    footer a:hover { color: var(--blue); }
 
     @media (max-width: 600px) {
-      h1 { font-size: 1.9rem; }
-      nav .links { gap: 1rem; }
+      h1 { font-size: 2rem; }
+      nav .links { gap: 1rem; font-size: 0.8rem; }
       .hero-actions { flex-direction: column; }
       .btn { justify-content: center; }
     }
@@ -215,87 +227,79 @@
   </div>
 </nav>
 
-<!-- HERO -->
 <section id="hero">
   <div class="container">
-    <div class="hero-badge">Production RAG Agent &mdash; Live on HuggingFace Spaces</div>
-    <h1>AskMyDoc</h1>
+    <div class="hero-badge">Production RAG Agent &middot; Live on HuggingFace Spaces</div>
+    <h1><span class="hero-title-line">AskMyDoc</span></h1>
     <p class="hero-sub">
-      An autonomous AI research agent that retrieves from your documents and the web in real time —
+      An autonomous AI research agent that retrieves from your documents and the web in real time,
       built with LangGraph, FastAPI, and a full retrieval pipeline from scratch.
     </p>
     <div class="hero-actions">
-      <a class="btn btn-primary" href="https://ambarish0221-askmydoc.hf.space" target="_blank">
-        Live Demo
-      </a>
-      <a class="btn btn-secondary" href="https://github.com/apatha32/RAG-Agent-AskMyDoc" target="_blank">
-        View on GitHub
-      </a>
+      <a class="btn btn-primary" href="https://ambarish0221-askmydoc.hf.space" target="_blank">Live Demo</a>
+      <a class="btn btn-secondary" href="https://github.com/apatha32/RAG-Agent-AskMyDoc" target="_blank">View on GitHub</a>
     </div>
     <div class="hero-meta">
       <span>May 2026</span>
-      <span>Python &middot; Next.js &middot; Go-live on HuggingFace Spaces</span>
+      <span>Python &middot; Next.js &middot; Live on HuggingFace Spaces</span>
     </div>
   </div>
 </section>
 
-<!-- WHY -->
 <section id="why">
   <div class="container">
     <h2>Why I built this</h2>
     <p>
-      Most RAG demos stop at "embed a PDF, ask a question." That's a retrieval lookup, not an agent.
-      I wanted to build something closer to what production systems actually need — a LangGraph ReAct
+      Most RAG demos stop at "embed a PDF, ask a question." That is a retrieval lookup, not an agent.
+      I wanted to build something closer to what production systems actually need: a LangGraph ReAct
       agent that reasons about <em>which tool to use</em>, streams its trace back to the UI in real time,
       maintains conversation history across turns, and handles multiple documents simultaneously.
     </p>
     <p>
       The retrieval side was the other gap I wanted to close. Vanilla cosine similarity over chunks is
-      fragile — short or vague queries return noise. So I built a multi-stage pipeline: HyDE query
+      fragile. Short or vague queries return noise. So I built a multi-stage pipeline: HyDE query
       rewriting to generate a hypothetical answer before retrieval, hybrid BM25 + dense search for
       breadth, and a cross-encoder to re-rank the survivors. The difference in recall is significant.
     </p>
     <p>
       Deployment was a deliberate constraint: one Docker container, no external services required.
       nginx + supervisord orchestrates the Next.js frontend and FastAPI backend inside a single image,
-      with in-memory Qdrant as fallback — so it runs identically locally and on HuggingFace Spaces.
+      with in-memory Qdrant as fallback. It runs identically locally and on HuggingFace Spaces.
     </p>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
 <section id="how">
   <div class="container">
     <h2>How it works</h2>
     <p style="margin-bottom: 1.25rem;">End-to-end request flow, from browser to answer:</p>
     <div class="pipeline"><span class="hl2">Browser (Next.js 15)</span>
-  │  type a question → hit Send
-  ▼
+  |  type a question, hit Send
+  v
 <span class="hl2">FastAPI  /chat</span>
-  ├── Input guardrails       (prompt injection patterns, length limits)
-  ├── Session memory lookup  (20-turn history per UUID)
-  │
-  ▼
-<span class="hl">LangGraph ReAct Agent</span>  ← decides which tool to call
-  │
-  ├── <span class="hl3">rag_search</span>
-  │     1. HyDE rewrite     LLM generates a hypothetical answer → use that for embedding lookup
-  │     2. Hybrid retrieve  BM25 + dense via EnsembleRetriever  (k=12 each)
-  │     3. Re-rank          cross-encoder/ms-marco-MiniLM-L-6-v2 → top 6 chunks
-  │     4. Return chunks    with [Chunk N | doc_name | page | strategy] citations
-  │
-  └── <span class="hl3">web_search</span>
-        Tavily API → 4 results when document doesn't contain the answer
-  │
-  ▼
+  +-- Input guardrails       (prompt injection patterns, length limits)
+  +-- Session memory lookup  (20-turn history per UUID)
+  |
+  v
+<span class="hl">LangGraph ReAct Agent</span>  decides which tool to call
+  |
+  +-- <span class="hl3">rag_search</span>
+  |     1. HyDE rewrite     LLM generates a hypothetical answer, use that for embedding lookup
+  |     2. Hybrid retrieve  BM25 + dense via EnsembleRetriever  (k=12 each)
+  |     3. Re-rank          cross-encoder/ms-marco-MiniLM-L-6-v2, top 6 chunks
+  |     4. Return chunks    with [Chunk N | doc_name | page | strategy] citations
+  |
+  +-- <span class="hl3">web_search</span>
+        Tavily API, 4 results when document does not contain the answer
+  |
+  v
 <span class="hl2">LLM</span>  (OpenAI gpt-4o-mini / gpt-4o  or  HuggingFace Mistral / Zephyr / Llama-3)
-  │  streams tokens via SSE
-  ▼
+  |  streams tokens via SSE
+  v
 <span class="hl2">Browser</span>  renders token stream + collapsible agent trace + source citations</div>
   </div>
 </section>
 
-<!-- FEATURES -->
 <section id="features">
   <div class="container">
     <h2>Key features</h2>
@@ -305,7 +309,7 @@
         <div class="feature-num">01</div>
         <div class="feature-body">
           <h3>HyDE Query Rewriting</h3>
-          <p>Before retrieval, the LLM generates a short hypothetical passage that would answer the question. The embedding of that passage is used for vector lookup instead of the raw query. Recall on short or ambiguous questions improves substantially — the original query is still used for re-ranking.</p>
+          <p>Before retrieval, the LLM generates a short hypothetical passage that would answer the question. The embedding of that passage is used for vector lookup instead of the raw query. Recall on short or ambiguous questions improves substantially. The original query is still used for re-ranking.</p>
         </div>
       </div>
 
@@ -313,7 +317,7 @@
         <div class="feature-num">02</div>
         <div class="feature-body">
           <h3>Hybrid BM25 + Dense Retrieval</h3>
-          <p>BM25 and dense vector search are run in parallel and merged via <code style="font-size:0.82em;color:var(--accent)">EnsembleRetriever</code> (weights 0.4 / 0.6). BM25 catches exact keyword matches that dense search misses; dense search handles semantic paraphrasing. Together they consistently outperform either alone.</p>
+          <p>BM25 and dense vector search run in parallel and merge via <code>EnsembleRetriever</code> (weights 0.4 / 0.6). BM25 catches exact keyword matches that dense search misses; dense search handles semantic paraphrasing. Together they consistently outperform either alone.</p>
         </div>
       </div>
 
@@ -321,7 +325,7 @@
         <div class="feature-num">03</div>
         <div class="feature-body">
           <h3>Cross-Encoder Re-ranking</h3>
-          <p>The top-12 candidates from hybrid retrieval are scored by <code style="font-size:0.82em;color:var(--accent)">ms-marco-MiniLM-L-6-v2</code> — a cross-encoder that reads query and passage together rather than comparing embeddings in isolation. Top 6 are passed to the LLM, cutting noise and token cost.</p>
+          <p>The top-12 candidates from hybrid retrieval are scored by <code>ms-marco-MiniLM-L-6-v2</code>, a cross-encoder that reads query and passage together rather than comparing embeddings in isolation. Top 6 are passed to the LLM, cutting noise and token cost.</p>
         </div>
       </div>
 
@@ -329,7 +333,7 @@
         <div class="feature-num">04</div>
         <div class="feature-body">
           <h3>Multilingual Embeddings</h3>
-          <p>Embeddings use <code style="font-size:0.82em;color:var(--accent)">paraphrase-multilingual-MiniLM-L12-v2</code> — 50+ language support, same 384-dimensional space as the English-only model. Documents in non-English languages are indexed and retrieved correctly with no code changes.</p>
+          <p>Embeddings use <code>paraphrase-multilingual-MiniLM-L12-v2</code> with 50+ language support and the same 384-dimensional space as the English-only model. Documents in non-English languages are indexed and retrieved correctly with no code changes.</p>
         </div>
       </div>
 
@@ -337,15 +341,15 @@
         <div class="feature-num">05</div>
         <div class="feature-body">
           <h3>LangGraph ReAct Agent</h3>
-          <p>The agent loop is built with LangGraph's <code style="font-size:0.82em;color:var(--accent)">MessagesState</code> and <code style="font-size:0.82em;color:var(--accent)">ToolNode</code>. It decides whether to call <code style="font-size:0.82em;color:var(--accent)">rag_search</code> or <code style="font-size:0.82em;color:var(--accent)">web_search</code> based on the question, can chain multiple tool calls, and streams all intermediate steps back to the UI via SSE.</p>
+          <p>The agent loop uses LangGraph's <code>MessagesState</code> and <code>ToolNode</code>. It decides whether to call <code>rag_search</code> or <code>web_search</code> based on the question, can chain multiple tool calls, and streams all intermediate steps back to the UI via SSE.</p>
         </div>
       </div>
 
       <div class="feature">
         <div class="feature-num">06</div>
         <div class="feature-body">
-          <h3>Input &amp; Output Guardrails</h3>
-          <p>Input is checked against 9 regex patterns covering common prompt injection and jailbreak attempts before the agent sees it. Oversized queries (&gt;2000 chars) are rejected with a clear error. Output is truncated at 8000 chars and flagged if hallucination signal phrases are detected.</p>
+          <h3>Input and Output Guardrails</h3>
+          <p>Input is checked against 9 regex patterns covering prompt injection and jailbreak attempts before the agent sees it. Oversized queries (&gt;2000 chars) are rejected with a clear error. Output is truncated at 8000 chars and flagged if hallucination signal phrases are detected.</p>
         </div>
       </div>
 
@@ -353,7 +357,7 @@
         <div class="feature-num">07</div>
         <div class="feature-body">
           <h3>RAG Evaluation Metrics</h3>
-          <p>After every answer, the user can trigger an evaluation pass that computes three embedding-based scores — answer relevancy, faithfulness to retrieved context, and context recall — entirely via cosine similarity. No external eval API required.</p>
+          <p>After every answer, the user can trigger an evaluation pass that computes three embedding-based scores: answer relevancy, faithfulness to retrieved context, and context recall, entirely via cosine similarity. No external eval API required.</p>
         </div>
       </div>
 
@@ -361,7 +365,7 @@
         <div class="feature-num">08</div>
         <div class="feature-body">
           <h3>Single-Container Deployment</h3>
-          <p>A multi-stage Dockerfile builds the Next.js frontend and Python backend into one image. nginx routes <code style="font-size:0.82em;color:var(--accent)">/chat</code>, <code style="font-size:0.82em;color:var(--accent)">/ingest</code>, and other API paths to FastAPI on port 8000; all other traffic goes to Next.js on port 3000. supervisord manages both processes. Qdrant falls back to in-memory if no external URL is set.</p>
+          <p>A multi-stage Dockerfile builds the Next.js frontend and Python backend into one image. nginx routes <code>/chat</code>, <code>/ingest</code>, and other API paths to FastAPI on port 8000; all other traffic goes to Next.js on port 3000. supervisord manages both processes. Qdrant falls back to in-memory if no external URL is set.</p>
         </div>
       </div>
 
@@ -369,7 +373,6 @@
   </div>
 </section>
 
-<!-- TECH STACK -->
 <section id="stack">
   <div class="container">
     <h2>Tech stack</h2>
@@ -408,7 +411,6 @@
   </div>
 </section>
 
-<!-- FOOTER -->
 <footer>
   <div class="container">
     <p style="margin-bottom: 0.5rem;">
@@ -416,7 +418,7 @@
       &nbsp;&middot;&nbsp;
       <a href="https://github.com/apatha32/RAG-Agent-AskMyDoc" target="_blank">GitHub</a>
     </p>
-    <p>Built by Ambarish Pathak &mdash; May 2026</p>
+    <p>Built by Ambarish Pathak, May 2026</p>
   </div>
 </footer>
 
